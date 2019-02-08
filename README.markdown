@@ -18,7 +18,7 @@ Try the API by running:
 ### curl -X GET http://localhost:3001/api/v1/clients/1
 ### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"in-progress", "priority": 6}'
 
-For this task, you only need to update the API for updating client detail. You do not have to save the data back to db.txt
+For this task, you only need to update the API for updating client detail.
 
 Valid status:
 - backlog
@@ -36,3 +36,8 @@ Should insert the client as lowest priority (biggest number) with status complet
 
 Should insert the client at the right priority and reorder the priority in clients with different statuses
 ### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete", "priority": 3}'
+
+## Additional Resources
+Node JS: https://nodejs.org/en/
+Express: https://expressjs.com
+better-sqlite3: https://github.com/JoshuaWise/better-sqlite3/blob/HEAD/docs/api.md

@@ -1,4 +1,5 @@
 import express from 'express';
+import Database from 'better-sqlite3';
 
 const app = express();
 
@@ -8,8 +9,13 @@ app.get('/', (req, res) => {
   return res.status(200).send({'message': 'SHIPTIVITY API. Read documentation to see API docs'});
 });
 
-const fs = require('fs');
-let clients = JSON.parse(fs.readFileSync('db.txt', 'utf8'));
+// We are keeping one connection alive for the rest of the life application for simplicity
+const db = new Database('./clients.db');
+
+// Don't forget to close connection when server gets terminated
+const closeDb = () => db.close();
+process.on('SIGTERM', closeDb);
+process.on('SIGINT', closeDb);
 
 /**
  * Validate id input
@@ -25,7 +31,7 @@ const validateId = (id) => {
       },
     };
   }
-  const client = clients.find(client => client.id === id);
+  const client = db.prepare('select * from clients where id = ? limit 1').get(id);
   if (!client) {
     return {
       valid: false,
@@ -37,7 +43,6 @@ const validateId = (id) => {
   }
   return {
     valid: true,
-    client,
   };
 }
 
@@ -74,8 +79,11 @@ app.get('/api/v1/clients', (req, res) => {
         'long_message': 'Status can only be one of the following: [backlog | in-progress | complete].',
       });
     }
-    return res.status(200).send(clients.filter(client => client.status === status));
+    const clients = db.prepare('select * from clients where status = ?').all(status);
+    return res.status(200).send(clients);
   }
+  const statement = db.prepare('select * from clients');
+  const clients = statement.all();
   return res.status(200).send(clients);
 });
 
@@ -85,11 +93,11 @@ app.get('/api/v1/clients', (req, res) => {
  */
 app.get('/api/v1/clients/:id', (req, res) => {
   const id = parseInt(req.params.id , 10);
-  const { valid, messageObj, client } = validateId(id);
+  const { valid, messageObj } = validateId(id);
   if (!valid) {
     res.status(400).send(messageObj);
   }
-  return res.status(200).send(client);
+  return res.status(200).send(db.prepare('select * from clients where id = ?').get(id));
 });
 
 /**
@@ -108,12 +116,15 @@ app.get('/api/v1/clients/:id', (req, res) => {
  */
 app.put('/api/v1/clients/:id', (req, res) => {
   const id = parseInt(req.params.id , 10);
-  const { valid, messageObj, client } = validateId(id);
+  const { valid, messageObj } = validateId(id);
   if (!valid) {
     res.status(400).send(messageObj);
   }
 
   let { status, priority } = req.body;
+  let clients = db.prepare('select * from clients').all();
+  const client = clients.find(client => client.id === id);
+
   /* ---------- Update code below ----------*/
 
 

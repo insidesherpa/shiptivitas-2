@@ -26,3 +26,13 @@ Valid status:
 - complete
 
 `client.priority` should be unique per status. Ordered from 1 to x where priority 1 means most important client.
+
+Some sample curl to help you test your code (make sure you restart your server everytime you run this):
+Should do nothing
+### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"in-progress"}'
+
+Should insert the client as lowest priority (biggest number) with status complete
+### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete"}'
+
+Should insert the client at the right priority and reorder the priority in clients with different statuses
+### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete", "priority": 3}'

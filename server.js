@@ -9,7 +9,7 @@ app.get('/', (req, res) => {
 });
 
 const fs = require('fs');
-const clients = JSON.parse(fs.readFileSync('db.txt', 'utf8'));
+let clients = JSON.parse(fs.readFileSync('db.txt', 'utf8'));
 
 /**
  * Validate id input
@@ -39,6 +39,25 @@ const validateId = (id) => {
     valid: true,
     client,
   };
+}
+
+/**
+ * Validate priority input
+ * @param {any} priority
+ */
+const validatePriority = (priority) => {
+  if (Number.isNaN(priority)) {
+    return {
+      valid: false,
+      messageObj: {
+      'message': 'Invalid priority provided.',
+      'long_message': 'Priority can only be positive integer.',
+      },
+    };
+  }
+  return {
+    valid: true,
+  }
 }
 
 /**
@@ -94,7 +113,7 @@ app.put('/api/v1/clients/:id', (req, res) => {
     res.status(400).send(messageObj);
   }
 
-  const { status, priority } = req.body;
+  let { status, priority } = req.body;
   /* ---------- Update code below ----------*/
 
 

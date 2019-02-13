@@ -29,7 +29,7 @@
 <h2 id="task">Task</h2>
 <b> Working Fullstack 2: </b> Backend updates for new features
 Implement the backend change for the new productivity tool.
-<br>
+<br><br>
 <b> Aim: </b> 
 Your task is to take the latest version of the Shiptivitas app and now tie it to the NodeJS backend.
 In the backend, what you need to do is write a few functions that take the user event on the frontend and then save it to your database.

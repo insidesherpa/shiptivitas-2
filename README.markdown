@@ -26,7 +26,7 @@
 <br>Train online for the skills Y Combinator startups are looking for. One of the official ways to get recruited into a Y Combinator startup.
 </p>
 
-<h2 id="task">Task</h2>
+<h2 id="task">Module 2 Task Overview</h2>
 <b> Working Fullstack 2: </b> Backend updates for new features.
 Implement the backend changes for the new productivity tool.
 <br><br>

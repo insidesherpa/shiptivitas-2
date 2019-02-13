@@ -29,15 +29,26 @@
 <h2 id="task">Task</h2>
 <b> Working Fullstack 2: </b> Backend updates for new features
 Implement the backend change for the new productivity tool.
-
-<br><br>
-
+<br>
 <b> Aim: </b> 
 Your task is to take the latest version of the Shiptivitas app and now tie it to the NodeJS backend.
 In the backend, what you need to do is write a few functions that take the user event on the frontend and then save it to your database.
 
-<h2 id="installation"> Installation </h2>
+<ol>
+  <li>Clone the Shiptivity frontend repository </li>
+  <li> Make the necessary changes to the code. **note:** this app does not require any user auth systems or permission levels yet</li>
+  
+</ol>
 
+Acceptance Criteria
+<ul>
+  <li>When a user moves a card from one swimlane to another, the database updates the position of the client accordingly.</li>
+  <li>When a user rearranges a card in the same swimlane, the database updates the position of the client accordingly.</li>
+  <li>When a user refreshes the page, the cards position and order should remain in the same spot as before.</li>
+  
+</ul>
+
+<h2 id="installation"> Installation </h2>
 
 
 ## Shiptivity API server

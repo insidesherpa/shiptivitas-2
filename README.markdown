@@ -88,11 +88,11 @@ Should do nothing
 
 ### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"in-progress"}'
 
-Should Isert the client as lowest priority (biggest number) with status complete
+Should insert the client as lowest priority (biggest number) with status complete
 
 ### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete"}'
 
-Insert the client at the right priority and reorder the priority in clients with different statuses
+Should insert the client at the right priority and reorder the priority in clients with different statuses
 
 ### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete", "priority": 3}'
 

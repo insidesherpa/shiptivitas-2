@@ -1,3 +1,6 @@
+[logo]: https://s3-ap-southeast-2.amazonaws.com/insidesherpa-assets/yc/yc-blade.png
+
+
 ## Shiptivity API server
 
 Here is a node js application using Express

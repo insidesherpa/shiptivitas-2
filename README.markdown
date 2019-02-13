@@ -1,4 +1,43 @@
-[logo]: https://s3-ap-southeast-2.amazonaws.com/insidesherpa-assets/yc/yc-blade.png"Logo"
+<p align="center">
+<a href="https://www.insidesherpa.com/virtual-internships/prototype/oRMogWRHeewqHzA7u/College%20Students%3A%20Learn%20how%20to%20work%20at%20a%20YC%20startup">
+<img src="https://s3-ap-southeast-2.amazonaws.com/insidesherpa-assets/yc/yc-blade.png"></a>
+<br><br>
+  <a href="https://www.insidesherpa.com/virtual-internships/prototype/oRMogWRHeewqHzA7u/College%20Students%3A%20Learn%20how%20to%20work%20at%20a%20YC%20startup">
+  <img src="https://s3-ap-southeast-2.amazonaws.com/insidesherpa-assets/yc/workatastartup_logo_orange-c2a27f6374f9395166ee9906e2e0873af835b3c6132ae6aa0543582298567041.svg"></a>
+</p>
+
+
+<p align='center'> 
+  <a href="#task"> Task </a>  
+  | 
+  <a href="#installation"> Installation </a>
+  |
+  <a href="https://www.insidesherpa.com/modules/oRMogWRHeewqHzA7u/9btzxEJz5aDBhNHMv"> Link to Module 2 </a>
+  |
+  <a href="https://www.insidesherpa.com/virtual-internships/prototype/oRMogWRHeewqHzA7u/College%20Students%3A%20Learn%20how%20to%20work%20at%20a%20YC%20startup" target="_blank"> Link to Y Combinator Program </a>
+           
+</p>
+
+
+# Introduction 
+<p> 
+<b> College Students: 
+  Learn how to work at a Y Combinator startup </b>
+<br>Train online for the skills Y Combinator startups are looking for. One of the official ways to get recruited into a Y Combinator startup.
+</p>
+
+<h2 id="task">Task</h2>
+<b> Working Fullstack 2: </b> Backend updates for new features
+Implement the backend change for the new productivity tool.
+
+<br><br>
+
+<b> Aim: </b> 
+Your task is to take the latest version of the Shiptivitas app and now tie it to the NodeJS backend.
+In the backend, what you need to do is write a few functions that take the user event on the frontend and then save it to your database.
+
+<h2 id="installation"> Installation </h2>
+
 
 
 ## Shiptivity API server

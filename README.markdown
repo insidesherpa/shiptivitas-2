@@ -8,7 +8,7 @@
 
 
 <p align='center'> 
-  <b><a href="#task"> Task </a></b>
+  <b><a href="#task"> Task Overview</a></b>
   | 
   <b><a href="#installation"> Installation </a></b>
   |

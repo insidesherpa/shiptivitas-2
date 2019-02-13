@@ -59,19 +59,20 @@ This is a node js application using Express
 To run the application make sure you have node installed.
 
 Once you have cloned the repo, run:
-### npm install
+<code> npm install </code>
 to install all dependencies
 
 Start the server by running:
-### npm start
+<code> npm start </code>
 This command will run the Express server on localhost:3001
 
 Try the API by running:
+<code>
 ### curl -X GET http://localhost:3001/api/v1/clients
 ### curl -X GET http://localhost:3001/api/v1/clients?status=backlog
 ### curl -X GET http://localhost:3001/api/v1/clients/1
 ### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"in-progress", "priority": 6}'
-
+</code>
 For this task, you only need to update the API for updating client detail.
 
 Valid status:
@@ -82,15 +83,19 @@ Valid status:
 `client.priority` should be unique per status. Ordered from 1 to x where priority 1 means most important client.
 
 Some sample curl to help you test your code (make sure you restart your server each time you run this):
+
 Should do nothing
+<code>
 ### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"in-progress"}'
-
-Insert the client as lowest priority (biggest number) with status complete
+</code>
+Should Isert the client as lowest priority (biggest number) with status complete
+<code>
 ### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete"}'
-
+</code>
 Insert the client at the right priority and reorder the priority in clients with different statuses
+<code>
 ### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete", "priority": 3}'
-
+</code>
 ## Additional Resources
 Node JS: https://nodejs.org/en/
 Express: https://expressjs.com

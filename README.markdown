@@ -27,8 +27,8 @@
 </p>
 
 <h2 id="task">Task</h2>
-<b> Working Fullstack 2: </b> Backend updates for new features
-Implement the backend change for the new productivity tool.
+<b> Working Fullstack 2: </b> Backend updates for new features.
+Implement the backend changes for the new productivity tool.
 <br><br>
 <b> Aim: </b> 
 Your task is to take the latest version of the Shiptivitas app and now tie it to the NodeJS backend.
@@ -81,14 +81,14 @@ Valid status:
 
 `client.priority` should be unique per status. Ordered from 1 to x where priority 1 means most important client.
 
-Some sample curl to help you test your code (make sure you restart your server everytime you run this):
+Some sample curl to help you test your code (make sure you restart your server each time you run this):
 Should do nothing
 ### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"in-progress"}'
 
-Should insert the client as lowest priority (biggest number) with status complete
+Insert the client as lowest priority (biggest number) with status complete
 ### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete"}'
 
-Should insert the client at the right priority and reorder the priority in clients with different statuses
+Insert the client at the right priority and reorder the priority in clients with different statuses
 ### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete", "priority": 3}'
 
 ## Additional Resources

@@ -47,7 +47,8 @@ Acceptance Criteria
 
 <ol>
   <li>Clone the Shiptivity frontend repository </li>
-  <li> Make the necessary changes to the code. **note:** this app does not require any user auth systems or permission levels yet</li>
+  <li> Make the necessary changes to the code. <br>
+    <i>note: this app does not require any user auth systems or permission levels yet</i></li>
   
 </ol>
 

@@ -1,4 +1,4 @@
-[logo]: https://s3-ap-southeast-2.amazonaws.com/insidesherpa-assets/yc/yc-blade.png
+[logo]: https://s3-ap-southeast-2.amazonaws.com/insidesherpa-assets/yc/yc-blade.png"Logo"
 
 
 ## Shiptivity API server

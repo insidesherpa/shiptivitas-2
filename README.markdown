@@ -68,10 +68,10 @@ This command will run the Express server on localhost:3001
 
 Try the API by running:
 <code>
-### curl -X GET http://localhost:3001/api/v1/clients
-### curl -X GET http://localhost:3001/api/v1/clients?status=backlog
-### curl -X GET http://localhost:3001/api/v1/clients/1
-### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"in-progress", "priority": 6}'
+curl -X GET http://localhost:3001/api/v1/clients
+curl -X GET http://localhost:3001/api/v1/clients?status=backlog
+curl -X GET http://localhost:3001/api/v1/clients/1
+curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"in-progress", "priority": 6}'
 </code>
 For this task, you only need to update the API for updating client detail.
 

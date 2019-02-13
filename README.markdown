@@ -33,6 +33,7 @@ Implement the backend change for the new productivity tool.
 <b> Aim: </b> 
 Your task is to take the latest version of the Shiptivitas app and now tie it to the NodeJS backend.
 In the backend, what you need to do is write a few functions that take the user event on the frontend and then save it to your database.
+<br>
 
 Acceptance Criteria
 <ul>
@@ -52,11 +53,11 @@ Acceptance Criteria
 
 ## Shiptivity API server
 
-Here is a node js application using Express
+This is a node js application using Express
 
-To run the application make sure you have node installed
+To run the application make sure you have node installed.
 
-Once you have clone the repo, run:
+Once you have cloned the repo, run:
 ### npm install
 to install all dependencies
 

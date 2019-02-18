@@ -8,13 +8,13 @@
 
 
 <p align='center'> 
-  <a href="#task"> Task </a>  
+  <b><a href="#task"> Task Overview</a></b>
   | 
-  <a href="#installation"> Installation </a>
+  <b><a href="#installation"> Installation </a></b>
   |
-  <a href="https://www.insidesherpa.com/modules/oRMogWRHeewqHzA7u/9btzxEJz5aDBhNHMv"> Link to Module 2 </a>
+  <b><a href="https://www.insidesherpa.com/modules/oRMogWRHeewqHzA7u/9btzxEJz5aDBhNHMv"> Link to Module 2 </a></b>
   |
-  <a href="https://www.insidesherpa.com/virtual-internships/prototype/oRMogWRHeewqHzA7u/College%20Students%3A%20Learn%20how%20to%20work%20at%20a%20YC%20startup" target="_blank"> Link to Y Combinator Program </a>
+  <b><a href="https://www.insidesherpa.com/virtual-internships/prototype/oRMogWRHeewqHzA7u/College%20Students%3A%20Learn%20how%20to%20work%20at%20a%20YC%20startup" target="_blank"> Link to Y Combinator Program </a></b>
            
 </p>
 
@@ -26,7 +26,7 @@
 <br>Train online for the skills Y Combinator startups are looking for. One of the official ways to get recruited into a Y Combinator startup.
 </p>
 
-<h2 id="task">Task</h2>
+<h2 id="task">Module 2 Task Overview</h2>
 <b> Working Fullstack 2: </b> Backend updates for new features.
 Implement the backend changes for the new productivity tool.
 <br><br>

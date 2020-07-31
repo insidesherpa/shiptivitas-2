@@ -137,7 +137,7 @@ app.put('/api/v1/clients/:id', (req, res) => {
         client.priority = priority;
         client.status = status;
 
-        //true if a client in the database has the same priority and status
+        // the database has the same priority and status
         const priorityClash = clashedClient != undefined;
         if (priorityClash) {
             //extract all clients with priority equal to or greater than new client

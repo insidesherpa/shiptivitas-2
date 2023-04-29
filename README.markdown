@@ -67,10 +67,14 @@ Start the server by running:
 This command will run the Express server on localhost:3001
 
 Try the API by running:
-### curl -X GET http://localhost:3001/api/v1/clients
-### curl -X GET http://localhost:3001/api/v1/clients?status=backlog
-### curl -X GET http://localhost:3001/api/v1/clients/1
-### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"in-progress", "priority": 6}'
+
+```curl -X GET http://localhost:3001/api/v1/clients```
+
+```curl -X GET http://localhost:3001/api/v1/clients?status=backlog```
+
+```curl -X GET http://localhost:3001/api/v1/clients/1```
+
+```curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"in-progress", "priority": 6}'```
 
 
 For this task, you only need to update the API for updating client detail.
@@ -86,15 +90,15 @@ Some sample curl to help you test your code (make sure you restart your server e
 
 Should do nothing
 
-### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"in-progress"}'
+```curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"in-progress"}'```
 
 Should insert the client as lowest priority (biggest number) with status complete
 
-### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete"}'
+```curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete"}'```
 
 Should insert the client at the right priority and reorder the priority in clients with different statuses
 
-### curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete", "priority": 3}'
+```curl -X PUT http://localhost:3001/api/v1/clients/1 -H "Content-Type: application/json" -d '{"status":"complete", "priority": 3}'```
 
 ## Additional Resources
 Node JS: https://nodejs.org/en/

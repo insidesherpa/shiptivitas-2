@@ -9,16 +9,16 @@ app.get('/', (req, res) => {
   return res.status(200).send({'message': 'SHIPTIVITY API. Read documentation to see API docs'});
 });
 
-// We are keeping one connection alive for the rest of the life application for simplicity
+// Keep one connection alive for the rest of the life application for simplicity.
 const db = new Database('./clients.db');
 
-// Don't forget to close connection when server gets terminated
+// Close connection when server gets terminated.
 const closeDb = () => db.close();
 process.on('SIGTERM', closeDb);
 process.on('SIGINT', closeDb);
 
 /**
- * Validate id input
+ * Validate id input.
  * @param {any} id
  */
 const validateId = (id) => {
@@ -47,7 +47,7 @@ const validateId = (id) => {
 }
 
 /**
- * Validate priority input
+ * Validate priority input.
  * @param {any} priority
  */
 const validatePriority = (priority) => {
@@ -66,13 +66,13 @@ const validatePriority = (priority) => {
 }
 
 /**
- * Get all of the clients. Optional filter 'status'
- * GET /api/v1/clients?status={status} - list all clients, optional parameter status: 'backlog' | 'in-progress' | 'complete'
+ * Get all of the clients. Optional filter 'status'.
+ * GET /api/v1/clients?status={status} - list all clients, optional parameter status: 'backlog' | 'in-progress' | 'complete'.
  */
 app.get('/api/v1/clients', (req, res) => {
   const status = req.query.status;
   if (status) {
-    // status can only be either 'backlog' | 'in-progress' | 'complete'
+    // Status can only be either 'backlog' | 'in-progress' | 'complete'.
     if (status !== 'backlog' && status !== 'in-progress' && status !== 'complete') {
       return res.status(400).send({
         'message': 'Invalid status provided.',
@@ -89,7 +89,7 @@ app.get('/api/v1/clients', (req, res) => {
 
 /**
  * Get a client based on the id provided.
- * GET /api/v1/clients/{client_id} - get client by id
+ * GET /api/v1/clients/{client_id} - get client by id.
  */
 app.get('/api/v1/clients/:id', (req, res) => {
   const id = parseInt(req.params.id , 10);
@@ -102,11 +102,11 @@ app.get('/api/v1/clients/:id', (req, res) => {
 
 /**
  * Update client information based on the parameters provided.
- * When status is provided, the client status will be changed
+ * When status is provided, the client status will be changed.
  * When priority is provided, the client priority will be changed with the rest of the clients accordingly
  * Note that priority = 1 means it has the highest priority (should be on top of the swimlane).
  * No client on the same status should not have the same priority.
- * This API should return list of clients on success
+ * This API should return list of clients on success.
  *
  * PUT /api/v1/clients/{client_id} - change the status of a client
  *    Data:
@@ -125,9 +125,67 @@ app.put('/api/v1/clients/:id', (req, res) => {
   let clients = db.prepare('select * from clients').all();
   const client = clients.find(client => client.id === id);
 
-  /* ---------- Update code below ----------*/
+  if (status) {
+    // Status can only be either 'backlog' | 'in-progress' | 'complete'.
+    if (status !== 'backlog' && status !== 'in-progress' && status !== 'complete') {
+      return res.status(400).send({
+        'message': 'Invalid status provided.',
+        'long_message': 'Status can only be one of the following: [backlog | in-progress | complete].',
+      });
+    }
+  }
+  const newStatus = status;
+  const oldStatus = client.status;
+  const oldPriority = client.priority;
 
+  // There are 3 possible use cases:
+  // 1. oldStatus == newStatus AND oldPriority == priority, do nothing.
+  // 2. oldStatus == newStatus AND oldPriority != priority, reorder clients with the same status.
+  // 3. oldStatus != newStatus, reorder clients in oldStatus and newStatus. If priority is provided, rearranged accordingly.
 
+  if (oldStatus === newStatus && priority && oldPriority !== priority) {
+    const clientsWithDifferentStatus = clients.filter(client => client.status !== newStatus);
+    client.priority = priority - 0.5;
+    const clientsWithSameStatus = clients.filter(client => client.status === newStatus)
+      .sort((a, b) => a.priority - b.priority)
+      .map((client, index) => ({
+        ...client,
+        priority: index + 1,
+      }));
+    clients = [
+      ...clientsWithDifferentStatus,
+      ...clientsWithSameStatus,
+    ];
+
+  } else if (oldStatus !== newStatus) {
+    client.status = newStatus;
+    client.priority = priority ? priority - 0.5 : Number.MAX_SAFE_INTEGER;
+    const clientsWithDifferentStatus = clients.filter(client => client.status !== oldStatus && client.status !== newStatus);
+    const clientsWithOldStatus = clients.filter(client => client.status === oldStatus)
+      .sort((a, b) => a.priority - b.priority)
+      .map((client, index) => ({
+        ...client,
+        priority: index + 1,
+      }));
+    const clientsWithNewStatus = clients.filter(client => client.status === newStatus)
+      .sort((a, b) => a.priority - b.priority)
+      .map((client, index) => ({
+        ...client,
+        priority: index + 1,
+      }));
+    client.priority = clientsWithNewStatus.length;
+    clients = [
+      ...clientsWithDifferentStatus,
+      ...clientsWithOldStatus,
+      ...clientsWithNewStatus,
+    ];
+  }
+
+  // Naive approach of updating the entire rows on the table.
+  const updateStmt = db.prepare('update clients set status = ?, priority = ? where id = ?');
+  clients.forEach(client => {
+    updateStmt.run(client.status, client.priority, client.id);
+  });
 
   return res.status(200).send(clients);
 });

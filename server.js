@@ -6,7 +6,7 @@ const app = express();
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  return res.status(200).send({'message': 'SHIPTIVITY API. Read documentation to see API docs'});
+  return res.status(200).send({ 'message': 'SHIPTIVITY API. Read documentation to see API docs' });
 });
 
 // We are keeping one connection alive for the rest of the life application for simplicity
@@ -26,8 +26,8 @@ const validateId = (id) => {
     return {
       valid: false,
       messageObj: {
-      'message': 'Invalid id provided.',
-      'long_message': 'Id can only be integer.',
+        'message': 'Invalid id provided.',
+        'long_message': 'Id can only be integer.',
       },
     };
   }
@@ -36,8 +36,8 @@ const validateId = (id) => {
     return {
       valid: false,
       messageObj: {
-      'message': 'Invalid id provided.',
-      'long_message': 'Cannot find client with that id.',
+        'message': 'Invalid id provided.',
+        'long_message': 'Cannot find client with that id.',
       },
     };
   }
@@ -55,8 +55,8 @@ const validatePriority = (priority) => {
     return {
       valid: false,
       messageObj: {
-      'message': 'Invalid priority provided.',
-      'long_message': 'Priority can only be positive integer.',
+        'message': 'Invalid priority provided.',
+        'long_message': 'Priority can only be positive integer.',
       },
     };
   }
@@ -92,7 +92,7 @@ app.get('/api/v1/clients', (req, res) => {
  * GET /api/v1/clients/{client_id} - get client by id
  */
 app.get('/api/v1/clients/:id', (req, res) => {
-  const id = parseInt(req.params.id , 10);
+  const id = parseInt(req.params.id, 10);
   const { valid, messageObj } = validateId(id);
   if (!valid) {
     res.status(400).send(messageObj);
@@ -115,7 +115,7 @@ app.get('/api/v1/clients/:id', (req, res) => {
  *
  */
 app.put('/api/v1/clients/:id', (req, res) => {
-  const id = parseInt(req.params.id , 10);
+  const id = parseInt(req.params.id, 10);
   const { valid, messageObj } = validateId(id);
   if (!valid) {
     res.status(400).send(messageObj);
@@ -127,7 +127,74 @@ app.put('/api/v1/clients/:id', (req, res) => {
 
   /* ---------- Update code below ----------*/
 
+  if (status) {
+    if (
+      status !== "backlog" &&
+      (status !== "in-progress") & (status !== "complete")
+    ) {
+      return res.status(400).send({
+        message: "Invalid status provided",
+        long_message:
+          "Status can only be one of the following : [backlog | in-progress | complete]",
+      });
+    }
+  }
 
+  const newStatus = status;
+  const oldStatus = client.status;
+  const oldPriority = client.priority;
+
+  // There are 3 possible use cases:
+  // 1. oldStatus == newStatus AND oldPriority == priority, do nothing.
+  // 2. oldStatus == newStatus AND oldPriority != priority, reorder clients with the same status.
+  // 3. oldStatus != newStatus, reorder clients in oldStatus and newStatus. If priority is provided, rearranged accordingly.
+
+  if (oldStatus === newStatus && priority && oldPriority !== priority) {
+    const clientWithDifferentStatus = clients.filter(
+      (client) => client.status === newStatus
+    );
+    client.priority = priority - 0.5;
+
+    const clientWithSameStatus = clients
+      .filter((client) => client.status === newStatus)
+      .sort((a, b) => a.priority - b.priority)
+      .map((client, index) => ({ ...client, priority: index + 1 }));
+    clients = [...clientWithDifferentStatus, ...clientWithSameStatus];
+  } else if (oldStatus !== newStatus) {
+    client.status = newStatus;
+    client.priority = priority ? priority - 0.5 : Number.MAX_SAFE_INTEGER;
+
+    const clientWithDifferentStatus = clients.filter(
+      (client) => client.status !== oldStatus && client.status !== newStatus
+    );
+    const clientWithOldStatus = clients
+      .filter((client) => client.status === oldStatus)
+      .sort((a, b) => a.priority - b.priority)
+      .map((client, index) => ({ ...client, priority: index + 1 }));
+
+    const clientWithNewStatus = client
+      .filter((client) => client.status === newStatus)
+      .sort((a, b) => a.priority - b.priority)
+      .map((client, index) => ({
+        ...client,
+        priority: index + 1,
+      }));
+
+    client.priority = clientWithNewStatus.length;
+
+    clients = [
+      ...clientWithDifferentStatus,
+      ...clientWithOldStatus,
+      ...clientWithNewStatus,
+    ];
+  }
+
+  const updateStmt = db.prepare(
+    "Update clients set status = ?, priority = ?, where id = ?"
+  );
+  clients.forEach((client) => {
+    updateStmt.run(client.status, client.priority, client.id);
+  });
 
   return res.status(200).send(clients);
 });

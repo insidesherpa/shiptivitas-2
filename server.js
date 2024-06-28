@@ -134,3 +134,27 @@ app.put('/api/v1/clients/:id', (req, res) => {
 
 app.listen(3001);
 console.log('app running on port ', 3001);
+
+// Endpoint to update card position and swimlane
+app.post('/updateCardPosition', (req, res) => {
+  const { cardId, newPosition, newSwimlane } = req.body;
+  const db = new Database("./clients.db", { verbose: console.log });
+
+  try {
+    // Start a transaction
+    const updateCardPosition = db.prepare('UPDATE Cards SET position = ?, swimlane = ? WHERE id = ?');
+    const adjustPositions = db.prepare('UPDATE Cards SET position = position + 1 WHERE swimlane = ? AND position >= ?');
+
+    db.transaction(() => {
+      // Adjust positions of other cards
+      adjustPositions.run(newSwimlane, newPosition);
+      // Update the specified card's position and swimlane
+      updateCardPosition.run(newPosition, newSwimlane, cardId);
+    })();
+
+    res.status(200).send({ message: 'Card position updated successfully' });
+  } catch (error) {
+    console.error('Failed to update card position:', error);
+    res.status(500).send({ error: 'Failed to update card position' });
+  }
+});

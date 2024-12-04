@@ -127,10 +127,89 @@ app.put('/api/v1/clients/:id', (req, res) => {
 
   /* ---------- Update code below ----------*/
 
+  // Validate the priority
+  if (priority !== undefined) {
+    const { valid, messageObj } = validatePriority(priority);
+    if (!valid) {
+      // Immediately send reponse if invalid
+      res.status(400).send(messageObj);
+    }
+  }
+  // If priority wasn't passed, set to lowest priority
+  else priority = Infinity;
+
+  // Store array of updated clients
+  const updatedClients = [];
+
+  // Get all clients from old status
+  const oldStatusClients = clients.filter(
+    c => c.id !== client.id && c.status === client.status
+  );
 
 
-  return res.status(200).send(clients);
+  // Decrement those that were greater than the changed client
+  oldStatusClients.forEach(c => {
+    if (c.id !== id && c.priority > client.priority) {
+      updatedClients.push([c.status, c.priority - 1, c.id]);
+    }
+  });
+
+  // Get all clients from new status
+  if (status === undefined) status = client.status;
+  const newStatusClients = clients.filter(c => c.status === status);
+
+  // Watch for new max priority in case priority was not passed
+  let newMaxPriority = 0;
+
+  // Update clients with priorities greater than
+  // changed Client's new proirity
+  newStatusClients.forEach(c => {
+    if (c.id !== id && c.priority >= priority) {
+      updatedClients.push([c.status, c.priority + 1, c.id]);
+      newMaxPriority = c.priority + 1;
+    }
+  });
+
+  // Update changed client
+  if (priority === Infinity) priority = newMaxPriority + 1;
+  updatedClients.push([status, priority, client.id]);
+
+  // Send updates to database
+  updateClients(updatedClients);
+
+  // Reutnr list of all clients
+  return res.status(200).send(db.prepare("select * from clients").all());
 });
+
+// Allow all CORS for local testing
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept"
+  );
+  next();
+});
+
+// Database update query for single client
+const clientUpdate = db.prepare(
+  "UPDATE clients SET status=?, priority=? WHERE id=?"
+);
+
+// Database update for array of clients
+/** updatedClients array entry format:
+ *
+ * [
+ *  [client status, client priorotiy, client id],
+ *  ...
+ * ]
+ *
+ */
+const updateClients = db.transaction(updatedClients => {
+  for (const client of updatedClients) clientUpdate.run(...client);
+});
+
+
 
 app.listen(3001);
 console.log('app running on port ', 3001);

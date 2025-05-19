@@ -1,0 +1,36 @@
+{
+  "name": "shiptivity-api",
+  "version": "1.0.0",
+  "description": "The Backend of Shiptivity",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "babel server.js --out-dir build",
+    "start": "babel-watch server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/insidesherpa/shiptivity-2.git"
+  },
+  "keywords": [
+    "shiptivity"
+  ],
+  "author": "juliusarden",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/insidesherpa/shiptivity-2/issues"
+  },
+  "homepage": "https://github.com/insidesherpa/shiptivity-2#readme",
+  "dependencies": {
+    "better-sqlite3": "^5.4.0",
+    "express": "^4.16.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.2.2",
+    "@babel/preset-env": "^7.3.1",
+    "babel": "^6.23.0",
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-watch": "^7.0.0"
+  }
+}

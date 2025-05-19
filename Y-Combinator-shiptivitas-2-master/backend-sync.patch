@@ -1,0 +1,133 @@
+From f1e2d3c4b5a6 Mon Sep 17 00:00:00 2001
+From: Your Name <you@example.com>
+Date: Mon, 20 May 2025 00:00:00 -0400
+Subject: [PATCH] feat: persist Kanban moves to SQLite backend
+
+---
+ clients.sql | 13 +++++++++++++
+ package.json | 6 ++++++
+ server.js   | 98 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 117 insertions(+)
+
+diff --git a/clients.sql b/clients.sql
+index e69de29..b3f29f2 100644
+--- a/clients.sql
++++ b/clients.sql
+@@
++-- Kanban-ready schema + seed rows
++CREATE TABLE IF NOT EXISTS cards (
++  id       INTEGER PRIMARY KEY AUTOINCREMENT,
++  title    TEXT NOT NULL,
++  status   TEXT NOT NULL,          -- backlog | in-progress | complete
++  position INTEGER NOT NULL        -- 1-based order within a column
++);
++
++-- starter data
++INSERT OR IGNORE INTO cards (id, title, status, position) VALUES
++  (1, 'Order #1', 'backlog', 1),
++  (2, 'Order #2', 'backlog', 2);
+diff --git a/package.json b/package.json
+index 1c2f3a4..3d5a6e7 100644
+--- a/package.json
++++ b/package.json
+@@
+   "dependencies": {
++    "better-sqlite3": "^9.4.0",
++    "cors": "^2.8.5",
+     "express": "^4.18.2"
+   }
+diff --git a/server.js b/server.js
+new file mode 100644
+index 0000000..d3adface
+--- /dev/null
++++ b/server.js
+@@
++/* eslint-disable no-console */
++const fs       = require('fs');
++const path     = require('path');
++const express  = require('express');
++const cors     = require('cors');
++const sqlite3  = require('better-sqlite3');
++
++const app  = express();
++const PORT = process.env.PORT || 5000;
++
++app.use(cors());
++app.use(express.json());
++
++const DB_PATH = path.join(__dirname, 'clients.db');
++const db      = new sqlite3(DB_PATH);
++
++const schema = fs.readFileSync(path.join(__dirname, 'clients.sql'), 'utf8');
++db.exec(schema);
++
++const allCards = () =>
++  db.prepare('SELECT * FROM cards ORDER BY status, position').all();
++
++app.get('/api/v1/cards', (_req, res) => {
++  res.json(allCards());
++});
++
++app.post('/api/v1/cards', (req, res) => {
++  const { title } = req.body;
++  if (!title) return res.status(400).json({ message: 'title required' });
++
++  const pos = db
++    .prepare('SELECT COALESCE(MAX(position),0)+1 AS p FROM cards WHERE status=?')
++    .get('backlog').p;
++
++  const info = db
++    .prepare('INSERT INTO cards (title,status,position) VALUES (?,?,?)')
++    .run(title, 'backlog', pos);
++
++  res.status(201).json({ id: info.lastInsertRowid });
++});
++
++app.patch('/api/v1/cards/:id/move', (req, res) => {
++  const id = Number(req.params.id);
++  const { status, position } = req.body;
++
++  const card = db.prepare('SELECT * FROM cards WHERE id=?').get(id);
++  if (!card) return res.status(404).json({ message: 'card not found' });
++
++  const targetStatus = status || card.status;
++  let targetPos      = position;
++
++  db.transaction(() => {
++    if (targetStatus !== card.status) {
++      db.prepare(
++        'UPDATE cards SET position = position - 1 WHERE status = ? AND position > ?'
++      ).run(card.status, card.position);
++
++      if (!targetPos) {
++        targetPos =
++          db.prepare('SELECT COALESCE(MAX(position),0)+1 AS p FROM cards WHERE status=?')
++            .get(targetStatus).p;
++      }
++    }
++
++    if (targetPos && targetPos !== card.position) {
++      if (targetPos < card.position || targetStatus !== card.status) {
++        db.prepare(
++          'UPDATE cards SET position = position + 1 WHERE status = ? AND position >= ?'
++        ).run(targetStatus, targetPos);
++      } else {
++        db.prepare(
++          'UPDATE cards SET position = position - 1 WHERE status = ? AND position <= ? AND position > ?'
++        ).run(targetStatus, targetPos, card.position);
++      }
++    }
++
++    db.prepare(
++      'UPDATE cards SET status = ?, position = ? WHERE id = ?'
++    ).run(targetStatus, targetPos || card.position, id);
++  })();
++
++  res.json(allCards());
++});
++
++app.listen(PORT, () => {
++  console.log(`Backend listening on http://localhost:${PORT}`);
++});
+--
+2.34.1

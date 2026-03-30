@@ -26,8 +26,8 @@ const validateId = (id) => {
     return {
       valid: false,
       messageObj: {
-      'message': 'Invalid id provided.',
-      'long_message': 'Id can only be integer.',
+        'message': 'Invalid id provided.',
+        'long_message': 'Id can only be integer.',
       },
     };
   }
@@ -36,8 +36,8 @@ const validateId = (id) => {
     return {
       valid: false,
       messageObj: {
-      'message': 'Invalid id provided.',
-      'long_message': 'Cannot find client with that id.',
+        'message': 'Invalid id provided.',
+        'long_message': 'Cannot find client with that id.',
       },
     };
   }
@@ -55,8 +55,8 @@ const validatePriority = (priority) => {
     return {
       valid: false,
       messageObj: {
-      'message': 'Invalid priority provided.',
-      'long_message': 'Priority can only be positive integer.',
+        'message': 'Invalid priority provided.',
+        'long_message': 'Priority can only be positive integer.',
       },
     };
   }
@@ -109,27 +109,73 @@ app.get('/api/v1/clients/:id', (req, res) => {
  * This API should return list of clients on success
  *
  * PUT /api/v1/clients/{client_id} - change the status of a client
- *    Data:
- *      status (optional): 'backlog' | 'in-progress' | 'complete',
- *      priority (optional): integer,
+ * Data:
+ *   status (optional): 'backlog' | 'in-progress' | 'complete',
+ *   priority (optional): integer,
  *
  */
 app.put('/api/v1/clients/:id', (req, res) => {
   const id = parseInt(req.params.id , 10);
   const { valid, messageObj } = validateId(id);
   if (!valid) {
-    res.status(400).send(messageObj);
+    return res.status(400).send(messageObj);
   }
 
   let { status, priority } = req.body;
   let clients = db.prepare('select * from clients').all();
-  const client = clients.find(client => client.id === id);
+  const client = clients.find(c => c.id === id);
 
   /* ---------- Update code below ----------*/
 
+  // Validate priority if provided
+  if (priority !== undefined) {
+    priority = parseInt(priority, 10);
+    const { valid: pValid, messageObj: pMsg } = validatePriority(priority);
+    if (!pValid) {
+      return res.status(400).send(pMsg);
+    }
+  }
 
+  // Validate status if provided
+  const validStatuses = ['backlog', 'in-progress', 'complete'];
+  if (status !== undefined && !validStatuses.includes(status)) {
+    return res.status(400).send({
+      'message': 'Invalid status provided.',
+      'long_message': 'Status can only be one of the following: [backlog | in-progress | complete].',
+    });
+  }
 
-  return res.status(200).send(clients);
+  // Determine the target status and priority
+  const targetStatus = status !== undefined ? status : client.status;
+  const targetPriority = priority !== undefined ? priority : client.priority;
+
+  // Get clients in the target lane (excluding the current client), sorted by priority
+  const targetLaneClients = clients
+    .filter(c => c.status === targetStatus && c.id !== id)
+    .sort((a, b) => a.priority - b.priority);
+
+  // Insert current client at the desired priority position
+  targetLaneClients.splice(targetPriority - 1, 0, { ...client, status: targetStatus });
+
+  // Re-assign sequential priorities in the target lane
+  const updateStmt = db.prepare('update clients set status = ?, priority = ? where id = ?');
+  targetLaneClients.forEach((c, index) => {
+    updateStmt.run(targetStatus, index + 1, c.id);
+  });
+
+  // If status changed, re-compact the old lane priorities
+  if (status !== undefined && status !== client.status) {
+    const oldLaneClients = clients
+      .filter(c => c.status === client.status && c.id !== id)
+      .sort((a, b) => a.priority - b.priority);
+
+    oldLaneClients.forEach((c, index) => {
+      updateStmt.run(c.status, index + 1, c.id);
+    });
+  }
+
+  // Return updated full client list
+  return res.status(200).send(db.prepare('select * from clients').all());
 });
 
 app.listen(3001);

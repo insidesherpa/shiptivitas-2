@@ -125,10 +125,70 @@ app.put('/api/v1/clients/:id', (req, res) => {
   let clients = db.prepare('select * from clients').all();
   const client = clients.find(client => client.id === id);
 
-  /* ---------- Update code below ----------*/
+  const currentStatus = client.status;
+  const currentPriority = client.priority;
 
+  const targetStatus = status !== undefined ? status : currentStatus;
+  let targetPriority = priority !== undefined ? priority : null;
 
+  // Validate status if provided
+  if (status !== undefined && status !== 'backlog' && status !== 'in-progress' && status !== 'complete') {
+    return res.status(400).send({
+      'message': 'Invalid status provided.',
+      'long_message': 'Status can only be one of the following: [backlog | in-progress | complete].',
+    });
+  }
 
+  // Validate priority if provided
+  if (priority !== undefined) {
+    const { valid, messageObj } = validatePriority(priority);
+    if (!valid) {
+      return res.status(400).send(messageObj);
+    }
+  }
+
+  const executeUpdates = db.transaction(() => {
+    if (targetStatus !== currentStatus) {
+      // 1. Shift priorities down in the old swimlane to close the gap
+      db.prepare('UPDATE clients SET priority = priority - 1 WHERE status = ? AND priority > ?')
+        .run(currentStatus, currentPriority);
+
+      // 2. Determine new priority if not specified (place at the bottom)
+      if (targetPriority === null) {
+        const row = db.prepare('SELECT COALESCE(MAX(priority), 0) + 1 AS nextPriority FROM clients WHERE status = ?').get(targetStatus);
+        targetPriority = row.nextPriority;
+      } else {
+        // 3. Shift priorities up in the new swimlane to make room
+        db.prepare('UPDATE clients SET priority = priority + 1 WHERE status = ? AND priority >= ?')
+          .run(targetStatus, targetPriority);
+      }
+
+      // 4. Update the client
+      db.prepare('UPDATE clients SET status = ?, priority = ? WHERE id = ?')
+        .run(targetStatus, targetPriority, id);
+
+    } else if (targetPriority !== null && targetPriority !== currentPriority) {
+      // Reordering in the same swimlane
+      if (targetPriority < currentPriority) {
+        // Moving up: shift intermediate clients down (add 1)
+        db.prepare('UPDATE clients SET priority = priority + 1 WHERE status = ? AND priority >= ? AND priority < ?')
+          .run(currentStatus, targetPriority, currentPriority);
+      } else {
+        // Moving down: shift intermediate clients up (subtract 1)
+        db.prepare('UPDATE clients SET priority = priority - 1 WHERE status = ? AND priority > ? AND priority <= ?')
+          .run(currentStatus, currentPriority, targetPriority);
+      }
+
+      // Update current client priority
+      db.prepare('UPDATE clients SET priority = ? WHERE id = ?')
+        .run(targetPriority, id);
+    }
+  });
+
+  executeUpdates();
+
+  // Re-fetch all clients to send the updated database state back
+  clients = db.prepare('SELECT * FROM clients').all();
   return res.status(200).send(clients);
 });
 

@@ -114,20 +114,190 @@ app.get('/api/v1/clients/:id', (req, res) => {
  *      priority (optional): integer,
  *
  */
-app.put('/api/v1/clients/:id', (req, res) => {
-  const id = parseInt(req.params.id , 10);
+app.put("/api/v1/clients/:id", (req, res) => {
+  const id = parseInt(req.params.id, 10);
+
+  // Validate client ID
   const { valid, messageObj } = validateId(id);
+
   if (!valid) {
-    res.status(400).send(messageObj);
+    return res.status(400).send(messageObj);
   }
 
-  let { status, priority } = req.body;
-  let clients = db.prepare('select * from clients').all();
-  const client = clients.find(client => client.id === id);
+  const { status, priority } = req.body;
 
-  /* ---------- Update code below ----------*/
+  // Get the current client
+  const client = db.prepare("SELECT * FROM clients WHERE id = ?").get(id);
 
+  const oldStatus = client.status;
+  const oldPriority = client.priority;
 
+  // If neither status nor priority is provided
+  if (status === undefined && priority === undefined) {
+    return res.status(400).send({
+      message: "Nothing to update.",
+    });
+  }
+
+  // If a value is not provided, keep the existing value
+  const newStatus = status ?? oldStatus;
+  let newPriority = priority ?? oldPriority;
+
+  // If status changes but priority is not provided,
+  // put the client at the bottom of the new swimlane.
+  if (status !== undefined && priority === undefined) {
+    const result = db
+      .prepare("SELECT COUNT(*) AS count FROM clients WHERE status = ?")
+      .get(newStatus);
+
+    newPriority = result.count + 1;
+  }
+
+  // Use a transaction so that all database changes either
+  // succeed together or are rolled back together.
+  const updateClient = db.transaction(() => {
+    
+    // CASE 1: Client stays in the same swimlane
+
+    if (oldStatus === newStatus) {
+      // Moving UP
+      //
+      // Example:
+      // A 1
+      // B 2
+      // C 3
+      // D 4
+      //
+      // Move D: 4 -> 2
+      //
+      // B: 2 -> 3
+      // C: 3 -> 4
+      // D: 4 -> 2
+      if (newPriority < oldPriority) {
+        db.prepare(
+          `
+          UPDATE clients
+          SET priority = priority + 1
+          WHERE status = ?
+            AND priority >= ?
+            AND priority < ?
+            AND id != ?
+        `,
+        ).run(oldStatus, newPriority, oldPriority, id);
+      }
+
+      // Moving DOWN
+      //
+      // Example:
+      // A 1
+      // B 2
+      // C 3
+      // D 4
+      //
+      // Move A: 1 -> 3
+      //
+      // B: 2 -> 1
+      // C: 3 -> 2
+      // A: 1 -> 3
+      // ---------------------------------------------------
+      else if (newPriority > oldPriority) {
+        db.prepare(
+          `
+          UPDATE clients
+          SET priority = priority - 1
+          WHERE status = ?
+            AND priority > ?
+            AND priority <= ?
+            AND id != ?
+        `,
+        ).run(oldStatus, oldPriority, newPriority, id);
+      }
+
+      // Finally update the moved client
+      db.prepare(
+        `
+        UPDATE clients
+        SET status = ?,
+            priority = ?
+        WHERE id = ?
+      `,
+      ).run(newStatus, newPriority, id);
+    }
+
+    // CASE 2: Client moves to another swimlane
+    else {
+      // Step 1:
+      // Remove the client from the old swimlane.
+      // Everyone below the old position moves UP by 1.
+      // Example:
+      // A 1
+      // B 2  <-- moving
+      // C 3
+      // D 4
+      // Becomes:
+      // A 1
+      // C 2
+      // D 3
+      db.prepare(
+        `
+        UPDATE clients
+        SET priority = priority - 1
+        WHERE status = ?
+          AND priority > ?
+      `,
+      ).run(oldStatus, oldPriority);
+      // Step 2:
+      // Make space in the new swimlane.
+      //
+      // Everyone at or below the destination position
+      // moves DOWN by 1.
+      //
+      // Example:
+      // D 1
+      // E 2
+      // F 3
+      //
+      // Insert client at position 2:
+      //
+      // D 1
+      // E 3
+      // F 4
+      db.prepare(
+        `
+        UPDATE clients
+        SET priority = priority + 1
+        WHERE status = ?
+          AND priority >= ?
+      `,
+      ).run(newStatus, newPriority);
+
+      // Step 3:
+      // Finally move the client to the new swimlane
+      // and assign its new priority.
+      db.prepare(
+        `
+        UPDATE clients
+        SET status = ?,
+            priority = ?
+        WHERE id = ?
+      `,
+      ).run(newStatus, newPriority, id);
+    }
+  });
+
+  // Execute the transaction
+  updateClient();
+
+  // Return the updated clients
+  const clients = db
+    .prepare(
+      `
+      SELECT *
+      FROM clients
+      ORDER BY status, priority
+    `,
+    )
+    .all();
 
   return res.status(200).send(clients);
 });

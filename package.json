@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/insidesherpa/shiptivity-2#readme",
   "dependencies": {
-    "better-sqlite3": "^5.4.0",
+    "better-sqlite3": "^7.6.2",
     "express": "^4.16.4"
   },
   "devDependencies": {

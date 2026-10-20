@@ -117,15 +117,121 @@ app.get('/api/v1/clients/:id', (req, res) => {
 app.put('/api/v1/clients/:id', (req, res) => {
   const id = parseInt(req.params.id , 10);
   const { valid, messageObj } = validateId(id);
-  if (!valid) {
-    res.status(400).send(messageObj);
+ if (!valid) {
+  return res.status(400).send(messageObj);
   }
 
   let { status, priority } = req.body;
   let clients = db.prepare('select * from clients').all();
   const client = clients.find(client => client.id === id);
+  if (!client) {
+  return res.status(404).send({
+    message: 'Client not found.',
+  });
+}
 
   /* ---------- Update code below ----------*/
+  // Validate the supplied status.
+  const validStatuses = ['backlog', 'in-progress', 'complete'];
+
+  if (status !== undefined && !validStatuses.includes(status)) {
+    return res.status(400).send({
+      message: 'Invalid status provided.',
+      long_message: 'Status can only be backlog, in-progress, or complete.',
+    });
+  }
+
+  // Validate the supplied priority.
+  if (
+    priority !== undefined &&
+    (!Number.isInteger(priority) || priority < 1)
+  ) {
+    return res.status(400).send({
+      message: 'Invalid priority provided.',
+      long_message: 'Priority must be a positive integer.',
+    });
+  }
+
+  // If neither field is supplied, leave the client unchanged.
+  if (status === undefined && priority === undefined) {
+    return res.status(200).send(clients);
+  }
+
+  const originalStatus = client.status;
+  const targetStatus = status === undefined ? originalStatus : status;
+
+  // If status is unchanged and no priority was supplied, do nothing.
+  if (targetStatus === originalStatus && priority === undefined) {
+    return res.status(200).send(clients);
+  }
+
+  // Remove the moving client from the lists before inserting it.
+  const remainingClients = clients.filter(item => item.id !== id);
+
+  const targetClients = remainingClients
+    .filter(item => item.status === targetStatus)
+    .sort((a, b) => a.priority - b.priority || a.id - b.id);
+
+  // A status-only update puts the client last.
+  // A supplied priority inserts it at the requested position.
+  const insertionIndex = priority === undefined
+    ? targetClients.length
+    : Math.min(priority - 1, targetClients.length);
+
+  targetClients.splice(insertionIndex, 0, {
+    ...client,
+    status: targetStatus,
+  });
+
+  // Rebuild the order of the original status and target status.
+  const statusesToUpdate = originalStatus === targetStatus
+    ? [targetStatus]
+    : [originalStatus, targetStatus];
+
+  const updatedOrder = {};
+
+  statusesToUpdate.forEach(currentStatus => {
+    if (currentStatus === targetStatus) {
+      updatedOrder[currentStatus] = targetClients;
+    } else {
+      updatedOrder[currentStatus] = remainingClients
+        .filter(item => item.status === currentStatus)
+        .sort((a, b) => a.priority - b.priority || a.id - b.id);
+    }
+  });
+
+  // Update all affected rows atomically.
+  const updateClient = db.prepare(
+    'UPDATE clients SET status = ?, priority = ? WHERE id = ?'
+  );
+
+  const saveChanges = db.transaction(() => {
+    statusesToUpdate.forEach(currentStatus => {
+      updatedOrder[currentStatus].forEach((item, index) => {
+        updateClient.run(
+          currentStatus,
+          index + 1,
+          item.id
+        );
+      });
+    });
+  });
+
+  saveChanges();
+
+  // Return the updated client list in priority order within each status.
+  clients = db.prepare(
+    `SELECT * FROM clients
+     ORDER BY
+       CASE status
+         WHEN 'backlog' THEN 1
+         WHEN 'in-progress' THEN 2
+         WHEN 'complete' THEN 3
+         ELSE 4
+       END,
+       priority ASC`
+  ).all();
+
 
 
 

@@ -6,8 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "babel server.js --out-dir build",
-    "start": "babel-watch server.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/insidesherpa/shiptivity-2.git"
@@ -22,7 +24,8 @@
   },
   "homepage": "https://github.com/insidesherpa/shiptivity-2#readme",
   "dependencies": {
-    "better-sqlite3": "^5.4.0",
+    "better-sqlite3": "^13.0.3",
+    "cors": "^2.8.6",
     "express": "^4.16.4"
   },
   "devDependencies": {
@@ -31,6 +34,7 @@
     "babel": "^6.23.0",
     "babel-cli": "^6.26.0",
     "babel-preset-env": "^1.7.0",
-    "babel-watch": "^7.0.0"
+    "babel-watch": "^7.0.0",
+    "nodemon": "^3.1.14"
   }
 }

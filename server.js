@@ -5,6 +5,17 @@ const app = express();
 
 app.use(express.json());
 
+// Enable CORS for frontend requests
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.get('/', (req, res) => {
   return res.status(200).send({'message': 'SHIPTIVITY API. Read documentation to see API docs'});
 });
@@ -118,7 +129,7 @@ app.put('/api/v1/clients/:id', (req, res) => {
   const id = parseInt(req.params.id , 10);
   const { valid, messageObj } = validateId(id);
   if (!valid) {
-    res.status(400).send(messageObj);
+    return res.status(400).send(messageObj);
   }
 
   let { status, priority } = req.body;
@@ -127,7 +138,91 @@ app.put('/api/v1/clients/:id', (req, res) => {
 
   /* ---------- Update code below ----------*/
 
+  if (status) {
+    // status can only be either 'backlog' | 'in-progress' | 'complete'
+    if (status !== 'backlog' && status !== 'in-progress' && status !== 'complete') {
+      return res.status(400).send({
+        'message': 'Invalid status provided.',
+        'long_message': 'Status can only be one of the following: [backlog | in-progress | complete].',
+      });
+    }
+  }
 
+  if (priority !== undefined && priority !== null) {
+    priority = parseInt(priority, 10);
+    const { valid: priorityValid, messageObj: priorityMsg } = validatePriority(priority);
+    if (!priorityValid) {
+      return res.status(400).send(priorityMsg);
+    }
+  }
+
+  const newStatus = status || client.status;
+  const oldStatus = client.status;
+  const oldPriority = client.priority;
+
+  // We have 3 possible use cases:
+  // 1. oldStatus == newStatus AND oldPriority == priority, do nothing
+  // 2. oldStatus == newStatus AND oldPriority != priority, reorder clients with the same status
+  // 3. oldStatus != newStatus, reorder clients in oldStatus and newStatus. If priority is provided, rearranged accordingly
+
+  if (oldStatus === newStatus && priority && oldPriority !== priority) {
+    const clientsWithDifferentStatus = clients.filter(c => c.status !== newStatus);
+    const clientsWithSameStatus = clients.filter(c => c.status === newStatus && c.id !== client.id)
+      .sort((a, b) => a.priority - b.priority);
+
+    const targetIndex = Math.min(Math.max(1, priority), clientsWithSameStatus.length + 1) - 1;
+    clientsWithSameStatus.splice(targetIndex, 0, client);
+
+    const reorderedSameStatus = clientsWithSameStatus.map((c, index) => ({
+      ...c,
+      priority: index + 1,
+    }));
+
+    clients = [
+      ...clientsWithDifferentStatus,
+      ...reorderedSameStatus,
+    ];
+  } else if (oldStatus !== newStatus) {
+    client.status = newStatus;
+    const clientsWithDifferentStatus = clients.filter(c => c.status !== oldStatus && c.status !== newStatus);
+
+    const clientsWithOldStatus = clients.filter(c => c.status === oldStatus && c.id !== client.id)
+      .sort((a, b) => a.priority - b.priority)
+      .map((c, index) => ({
+        ...c,
+        priority: index + 1,
+      }));
+
+    const clientsWithNewStatus = clients.filter(c => c.status === newStatus && c.id !== client.id)
+      .sort((a, b) => a.priority - b.priority);
+
+    const targetPriority = priority || (clientsWithNewStatus.length + 1);
+    const targetIndex = Math.min(Math.max(1, targetPriority), clientsWithNewStatus.length + 1) - 1;
+    clientsWithNewStatus.splice(targetIndex, 0, client);
+
+    const reorderedNewStatus = clientsWithNewStatus.map((c, index) => ({
+      ...c,
+      status: newStatus,
+      priority: index + 1,
+    }));
+
+    clients = [
+      ...clientsWithDifferentStatus,
+      ...clientsWithOldStatus,
+      ...reorderedNewStatus,
+    ];
+  }
+
+  // Update rows on the table inside an atomic transaction
+  const updateStmt = db.prepare('update clients set status = ?, priority = ? where id = ?');
+  const updateTransaction = db.transaction(() => {
+    clients.forEach(c => {
+      updateStmt.run(c.status, c.priority, c.id);
+    });
+  });
+  updateTransaction();
+
+  clients = db.prepare('select * from clients').all();
 
   return res.status(200).send(clients);
 });

@@ -126,8 +126,43 @@ app.put('/api/v1/clients/:id', (req, res) => {
   const client = clients.find(client => client.id === id);
 
   /* ---------- Update code below ----------*/
+  let newStatus = status | client.status;
+  let newPriority = priority | client.priority;
+  
+  if (status && status !== 'backlog' && status !== 'in-progress' && status !== 'complete') {
+    return res.status(400).send({
+      'message': 'Invalid status provided.',
+      'long_message': 'Status can only be one of the following: [backlog | in-progress | complete].',
+    });
+  }
+  if(priority){
+    const priorityCheck = validatePriority(priority);
+    if (!priorityCheck.valid) {
+      return res.status(400).send(priorityCheck.messageObj);
+    }
+  }
 
+  let targetClients = db.prepare('SELECT * FROM clients WHERE id = ? AND ORDER BY priority ASC').all(newStatus);
+  
+  targetClients = targetClients.filter((c)=> c.id!==id);
 
+  const insertIndex = Math.max(0 , newPriority-1);
+
+  const updatedClient = { ...client, status: newStatus };
+  targetClients.splice(insertIndex, 0, updatedClient);
+
+  const updateStmt = db.prepare('UPDATE clients SET status = ?, priority = ? WHERE id = ?');
+
+  const updateTransaction = db.transaction((clientsToUpdate) => {
+    clientsToUpdate.forEach((c, index) => {
+      const correctPriority = index + 1;
+      updateStmt.run(newStatus, correctPriority, c.id);
+    });
+  });
+
+  updateTransaction(targetClients);
+
+  clients = db.prepare('SELECT * FROM clients').all();
 
   return res.status(200).send(clients);
 });
